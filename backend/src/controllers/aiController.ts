@@ -1,14 +1,14 @@
 import { Request, Response } from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import prisma from '../prisma';
-const HttpsProxyAgent = require('https-proxy-agent');
-const fetch = require('cross-fetch');
+import HttpsProxyAgent from 'https-proxy-agent';
+import fetch from 'cross-fetch';
 
 const proxyUrl = process.env.PROXY_URL;
 let fetchWithProxy: any = undefined;
 
 if (proxyUrl) {
-  const agent = new HttpsProxyAgent(proxyUrl);
+  const agent = new (HttpsProxyAgent as any)(proxyUrl);
   fetchWithProxy = (url: string, options: any) => fetch(url, { ...options, agent });
   console.log('Gemini AI is using proxy:', proxyUrl);
 }
