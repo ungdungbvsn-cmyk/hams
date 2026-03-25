@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import prisma from '../prisma';
-import HttpsProxyAgent from 'https-proxy-agent';
-import fetch from 'node-fetch';
+const HttpsProxyAgent = require('https-proxy-agent');
+const fetch = require('cross-fetch');
 
 const proxyUrl = process.env.PROXY_URL;
 let fetchWithProxy: any = undefined;
