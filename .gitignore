@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+*.log
+hams_db_export.sql
+import_supabase.bat
+psql-import-batch.log
+ai-test-*.txt
+deepseek-test.txt
+supabase-migration-*.log
+.DS_Store
+.vscode/
+.gemini/
