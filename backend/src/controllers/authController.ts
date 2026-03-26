@@ -43,23 +43,27 @@ export const login = async (req: Request, res: Response): Promise<any> => {
 
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1d' });
 
-    // Log Login
-    await logActivity(user.id, 'LOGIN', 'AUTHENTICATION', { username: user.username });
+    const userResponse = {
+      id: user.id,
+      username: user.username,
+      role: user.role,
+      employee: user.employee,
+      permissions: (user as any).permissions,
+      departments: (user as any).departments,
+    };
 
-    res.json({
-      token,
-      user: {
-        id: user.id,
-        username: user.username,
-        role: user.role,
-        employee: user.employee,
-        permissions: (user as any).permissions,
-        departments: (user as any).departments,
-      },
-    });
+    // Send response immediately
+    res.json({ token, user: userResponse });
+
+    // Log activity in background after response
+    logActivity(user.id, 'LOGIN', 'AUTHENTICATION', { username: user.username }).catch(err => 
+      console.error('Background log error:', err)
+    );
   } catch (error) {
     console.error('Login Error:', error);
-    res.status(500).json({ error: 'Internal server error.' });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Internal server error.' });
+    }
   }
 };
 
