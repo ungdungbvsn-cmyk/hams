@@ -54,7 +54,7 @@ export const getAssetInsights = async (req: Request, res: Response): Promise<any
 
     const modelOptions = fetchWithProxy ? { requestOptions: { fetch: fetchWithProxy } } : undefined;
     const genAI = getGenAI();
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }, modelOptions as any);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" }, modelOptions as any);
 
     const prompt = `Bạn là một trợ lý ảo quản lý tài sản chuyên nghiệp trong hệ thống y tế/bệnh viện.
     Dưới đây là thông tin chi tiết về tài sản. Hãy phân tích ngắn gọn (tối đa 3-4 câu tiếng Việt) về tình trạng thiết bị hiện tại, chỉ ra dấu hiệu bất thường nếu có nhiều lần sửa chữa hoặc báo hỏng, và đưa ra khuyến nghị bảo trì nếu cần:
