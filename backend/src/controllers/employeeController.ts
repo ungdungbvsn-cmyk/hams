@@ -4,9 +4,16 @@ import { logActivity } from '../utils/auditLogger';
 
 export const getEmployees = async (req: Request, res: Response) => {
   try {
+    const { departmentId } = req.query;
+    const filter: any = {};
+    if (departmentId) {
+      filter.departmentId = Number(departmentId);
+    }
+
     const employees = await prisma.employee.findMany({
+      where: filter,
       include: { department: true },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { fullName: 'asc' }
     });
     res.json(employees);
   } catch (error) {
