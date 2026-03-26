@@ -2,7 +2,7 @@ const selfsigned = require('selfsigned');
 const fs = require('fs');
 
 try {
-    const attrs = [{ name: 'commonName', value: 'qlts.benhviensannhihungyen.vn' }];
+    const attrs = [{ name: 'commonName', value: 'localhost' }];
     const pems = selfsigned.generate(attrs, { days: 365, keySize: 2048 });
 
     console.log('Type of cert:', typeof pems.cert);

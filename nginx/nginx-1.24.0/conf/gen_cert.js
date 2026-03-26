@@ -1,7 +1,8 @@
 const selfsigned = require('selfsigned');
 const fs = require('fs');
 
-const attrs = [{ name: 'commonName', value: 'qlts.benhviensannhihungyen.vn' }];
+const DOMAIN = 'hams.local';
+const attrs = [{ name: 'commonName', value: DOMAIN }];
 const pems = selfsigned.generate(attrs, { days: 365, keySize: 2048 });
 
 fs.writeFileSync('server.crt', pems.cert);

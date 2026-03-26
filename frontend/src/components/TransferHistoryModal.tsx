@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import apiClient from '../api/client';
-import { X, Clock, Edit2, Trash2, ArrowRight } from 'lucide-react';
+import { X, Clock, Edit2, ArrowRight } from 'lucide-react';
 import { EditTransferModal } from './EditTransferModal';
 
 interface TransferHistoryModalProps {
@@ -33,16 +33,6 @@ export const TransferHistoryModal = ({ isOpen, onClose, employee }: TransferHist
     }
   };
 
-  const handleDelete = async (historyId: number) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa bản ghi điều chuyển này? Điều này có thể ảnh hưởng đến dữ liệu chấm công và quản lý nhân sự.')) return;
-    try {
-      await apiClient.delete(`/employees/transfer/${historyId}`);
-      fetchHistory();
-      alert('Đã xóa thành công');
-    } catch (error) {
-      alert('Lỗi khi xóa bản ghi');
-    }
-  };
 
   if (!isOpen) return null;
 

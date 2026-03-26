@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import apiClient from '../api/client';
 import { format } from 'date-fns';
 import { Trash2, AlertTriangle, Search, CheckCircle, FileText, Upload } from 'lucide-react';
-import { useAuthStore } from '../store/useAuthStore';
 
 export const LiquidationList = () => {
   const [liquidations, setLiquidations] = useState<any[]>([]);
