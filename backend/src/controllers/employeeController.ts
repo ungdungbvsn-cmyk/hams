@@ -25,8 +25,11 @@ export const getEmployees = async (req: Request, res: Response) => {
     res.setHeader('X-HAMS-Debug', JSON.stringify({ 
         query: req.query, 
         appliedFilter: filter,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        version: '1.2.3-FILTER-FIX'
     }));
+    // Also add version property to the array (safe for JS)
+    (employees as any).HAMS_VERSION = '1.2.3-FILTER-FIX';
     res.json(employees);
   } catch (error) {
     console.error('getEmployees error:', error);

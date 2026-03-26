@@ -96,7 +96,7 @@ export const chatWithAI = async (req: Request, res: Response): Promise<any> => {
 
     const modelOptions = fetchWithProxy ? { requestOptions: { fetch: fetchWithProxy } } : undefined;
     const genAI = getGenAI();
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }, modelOptions as any);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" }, modelOptions as any);
     const chat = model.startChat({
       history: (history || []).map((h: any) => ({
         role: h.role === 'user' ? 'user' : 'model',
