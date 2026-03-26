@@ -7,12 +7,12 @@ declare global {
   var prisma: PrismaClient | undefined;
 }
 
-const connectionString = process.env.DATABASE_URL;
-const pool = new Pool({ connectionString });
-// @ts-ignore - Ignore pg Pool type mismatch
-const adapter = new PrismaPg(pool as any);
-
-const prisma = global.prisma || new PrismaClient({ adapter });
+const prisma = global.prisma || new PrismaClient();
+// Original adapter logic (causing DriverAdapterError on Render)
+// const connectionString = process.env.DATABASE_URL;
+// const pool = new Pool({ connectionString });
+// const adapter = new PrismaPg(pool as any);
+// const prisma = global.prisma || new PrismaClient({ adapter });
 
 if (process.env.NODE_ENV !== 'production') {
   global.prisma = prisma;
