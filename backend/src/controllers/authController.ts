@@ -56,9 +56,7 @@ export const login = async (req: Request, res: Response): Promise<any> => {
     res.json({ token, user: userResponse });
 
     // Log activity in background after response
-    logActivity(user.id, 'LOGIN', 'AUTHENTICATION', { username: user.username }).catch(err => 
-      console.error('Background log error:', err)
-    );
+    logActivity(user.id, 'LOGIN', 'AUTHENTICATION', { username: user.username });
   } catch (error) {
     console.error('Login Error:', error);
     if (!res.headersSent) {
