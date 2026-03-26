@@ -13,7 +13,14 @@ if (proxyUrl) {
   console.log('Gemini AI is using proxy:', proxyUrl);
 }
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+// Reuse the instance to avoid redundant initialization
+let genAIInstance: GoogleGenerativeAI | null = null;
+const getGenAI = () => {
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) throw new Error('GEMINI_API_KEY is not set in environment variables');
+    if (!genAIInstance) genAIInstance = new GoogleGenerativeAI(key);
+    return genAIInstance;
+};
 
 export const getAssetInsights = async (req: Request, res: Response): Promise<any> => {
   try {
@@ -46,6 +53,7 @@ export const getAssetInsights = async (req: Request, res: Response): Promise<any
     `;
 
     const modelOptions = fetchWithProxy ? { requestOptions: { fetch: fetchWithProxy } } : undefined;
+    const genAI = getGenAI();
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }, modelOptions as any);
 
     const prompt = `Bạn là một trợ lý ảo quản lý tài sản chuyên nghiệp trong hệ thống y tế/bệnh viện.
@@ -59,7 +67,11 @@ export const getAssetInsights = async (req: Request, res: Response): Promise<any
     res.json({ insight: responseText });
   } catch (error: any) {
     console.error('AI Error:', error);
-    res.status(500).json({ error: 'Lỗi khi lấy phân tích từ AI' });
+    res.status(500).json({ 
+        error: 'Lỗi khi lấy phân tích từ AI', 
+        details: error.message,
+        hasKey: !!process.env.GEMINI_API_KEY
+    });
   }
 };
 
@@ -83,6 +95,7 @@ export const chatWithAI = async (req: Request, res: Response): Promise<any> => {
     `;
 
     const modelOptions = fetchWithProxy ? { requestOptions: { fetch: fetchWithProxy } } : undefined;
+    const genAI = getGenAI();
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }, modelOptions as any);
     const chat = model.startChat({
       history: (history || []).map((h: any) => ({
@@ -99,6 +112,10 @@ export const chatWithAI = async (req: Request, res: Response): Promise<any> => {
     res.json({ reply: responseText });
   } catch (error: any) {
     console.error('AI Chat Error:', error);
-    res.status(500).json({ error: 'Lỗi khi chat với AI' });
+    res.status(500).json({ 
+        error: 'Lỗi khi chat với AI', 
+        details: error.message,
+        hasKey: !!process.env.GEMINI_API_KEY
+    });
   }
 };

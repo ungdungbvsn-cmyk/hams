@@ -6,18 +6,30 @@ export const getEmployees = async (req: Request, res: Response) => {
   try {
     const { departmentId } = req.query;
     const filter: any = {};
-    const deptId = departmentId as string | undefined;
-    if (deptId && typeof deptId === 'string' && deptId !== 'undefined' && deptId !== '') {
-      filter.departmentId = Number(deptId);
+    if (departmentId) {
+      const idStr = Array.isArray(departmentId) ? departmentId[0] : departmentId;
+      if (idStr && idStr !== 'undefined' && idStr !== '') {
+        filter.departmentId = Number(idStr);
+      }
     }
+
+    // DEBUG: Log the filter to console for Render logs
+    console.log('Fetching employees with filter:', JSON.stringify(filter));
+
 
     const employees = await prisma.employee.findMany({
       where: filter,
       include: { department: true },
       orderBy: { fullName: 'asc' }
     });
+    res.setHeader('X-HAMS-Debug', JSON.stringify({ 
+        query: req.query, 
+        appliedFilter: filter,
+        timestamp: new Date().toISOString()
+    }));
     res.json(employees);
   } catch (error) {
+    console.error('getEmployees error:', error);
     res.status(500).json({ error: 'Lỗi tải danh sách nhân viên' });
   }
 };
