@@ -25,8 +25,42 @@ import { BackupSettings } from './pages/BackupSettings';
 
 const NotFound = () => <div className="flex h-screen items-center justify-center text-2xl text-red-500">404 - Not Found</div>;
 
+import { useEffect } from 'react';
+import apiClient from './api/client';
+
 function App() {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const { token, user, setUser, loading, setLoading, logout } = useAuthStore();
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (token && !user) {
+        setLoading(true);
+        try {
+          const res = await apiClient.get('/auth/me');
+          setUser(res.data);
+        } catch (error) {
+          console.error('Initial profile fetch failed:', error);
+          logout();
+        }
+      } else if (!token) {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, [token, user, setUser, setLoading, logout]);
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-gray-500 font-bold animate-pulse">Đang đồng bộ dữ liệu...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const isAuthenticated = !!token && !!user;
 
   return (
     <BrowserRouter>
