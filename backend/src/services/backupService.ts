@@ -4,7 +4,7 @@ import fs from 'fs';
 import prisma from '../prisma';
 import cron, { ScheduledTask } from 'node-cron';
 
-const PG_DUMP_PATH = '"C:\\Program Files\\PostgreSQL\\18\\bin\\pg_dump.exe"';
+const PG_DUMP_PATH = 'pg_dump';
 
 export const runBackup = async () => {
   const config = await (prisma as any).backupConfig.findFirst();
@@ -12,23 +12,25 @@ export const runBackup = async () => {
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const filename = `hams_backup_${timestamp}.sql`;
-  const storagePath = config.storagePath || path.join(process.cwd(), 'backups');
   
+  // Use a temporary path if on Render/Linux, otherwise use config
+  let storagePath = config.storagePath;
+  if (process.platform !== 'win32' || !storagePath || storagePath.includes(':\\')) {
+    storagePath = path.join(process.cwd(), 'backups');
+  }
+
   if (!fs.existsSync(storagePath)) {
     fs.mkdirSync(storagePath, { recursive: true });
   }
 
   const fullPath = path.join(storagePath, filename);
   
-  // Get database connection info from DATABASE_URL
+  // Use connection string directly with pg_dump (PostgreSQL 10+)
   const dbUrl = process.env.DATABASE_URL || '';
-  // Format: postgresql://USER:PASSWORD@HOST:PORT/DATABASE
-  const match = dbUrl.match(/postgresql:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)/);
-  if (!match) return { error: 'Invalid DATABASE_URL for backup.' };
+  if (!dbUrl) return { error: 'DATABASE_URL not found.' };
 
-  const [_, user, password, host, port, dbName] = match;
-
-  const command = `SET PGPASSWORD=${password} && ${PG_DUMP_PATH} -h ${host} -p ${port} -U ${user} -f "${fullPath}" ${dbName}`;
+  // pg_dump "postgresql://user:pass@host:port/dbname" -f "path"
+  const command = `${PG_DUMP_PATH} "${dbUrl}" -f "${fullPath}"`;
 
   return new Promise((resolve) => {
     exec(command, async (error, stdout, stderr) => {
@@ -39,15 +41,19 @@ export const runBackup = async () => {
         });
         resolve({ error: 'Backup failed', details: stderr });
       } else {
-        const stats = fs.statSync(fullPath);
-        await (prisma as any).backupHistory.create({
-          data: { filename, size: BigInt(stats.size), status: 'SUCCESS' }
-        });
-        await (prisma as any).backupConfig.update({
-          where: { id: config.id },
-          data: { lastBackupAt: new Date() }
-        });
-        resolve({ message: 'Backup successful', filename });
+        try {
+          const stats = fs.statSync(fullPath);
+          await (prisma as any).backupHistory.create({
+            data: { filename, size: BigInt(stats.size), status: 'SUCCESS' }
+          });
+          await (prisma as any).backupConfig.update({
+            where: { id: config.id },
+            data: { lastBackupAt: new Date() }
+          });
+          resolve({ message: 'Backup successful', filename, path: fullPath });
+        } catch (statError: any) {
+          resolve({ error: 'Backup file created but could not be stat-ed', details: statError.message });
+        }
       }
     });
   });
