@@ -6,8 +6,9 @@ export const getEmployees = async (req: Request, res: Response) => {
   try {
     const { departmentId } = req.query;
     const filter: any = {};
-    if (departmentId && departmentId !== 'undefined' && departmentId !== '') {
-      filter.departmentId = Number(departmentId);
+    const deptId = departmentId as string | undefined;
+    if (deptId && typeof deptId === 'string' && deptId !== 'undefined' && deptId !== '') {
+      filter.departmentId = Number(deptId);
     }
 
     const employees = await prisma.employee.findMany({
