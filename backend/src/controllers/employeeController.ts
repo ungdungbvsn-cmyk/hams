@@ -6,7 +6,7 @@ export const getEmployees = async (req: Request, res: Response) => {
   try {
     const { departmentId } = req.query;
     const filter: any = {};
-    if (departmentId) {
+    if (departmentId && departmentId !== 'undefined' && departmentId !== '') {
       filter.departmentId = Number(departmentId);
     }
 

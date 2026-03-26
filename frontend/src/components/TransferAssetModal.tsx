@@ -25,9 +25,12 @@ export const TransferAssetModal = ({ isOpen, onClose, onSaved, asset }: any) => 
 
   useEffect(() => {
     if (formData.departmentId) {
+      // Reset receiver whenever department changes to avoid cross-department selection
+      setFormData(prev => ({ ...prev, receiverId: '' }));
       fetchEmployees(formData.departmentId);
     } else {
       setEmployees([]);
+      setFormData(prev => ({ ...prev, receiverId: '' }));
     }
   }, [formData.departmentId]);
 
@@ -50,11 +53,13 @@ export const TransferAssetModal = ({ isOpen, onClose, onSaved, asset }: any) => 
   };
 
   const fetchEmployees = async (deptId: string) => {
+    if (!deptId || deptId === 'undefined') return;
     try {
       const { data } = await apiClient.get(`/employees?departmentId=${deptId}`);
-      setEmployees(data);
+      setEmployees(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error('Error fetching employees');
+      setEmployees([]);
     }
   };
 
