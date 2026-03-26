@@ -15,12 +15,16 @@ interface Symbol {
   name: string;
 }
 
+import { useAuthStore } from '../store/useAuthStore';
+
 export const TimekeepingList = () => {
+  const { user } = useAuthStore();
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [symbols, setSymbols] = useState<Symbol[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [selectedDept, setSelectedDept] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loadingPrev, setLoadingPrev] = useState(false);
@@ -43,7 +47,17 @@ export const TimekeepingList = () => {
         apiClient.get('/master/departments')
       ]);
       setSymbols(symRes.data);
-      setDepartments(depRes.data);
+      
+      // Filter departments for non-admin users
+      if (user?.role?.name === 'ADMIN') {
+        setDepartments(depRes.data);
+      } else {
+        const userDepts = user?.departments || [];
+        setDepartments(userDepts);
+        if (userDepts.length === 1 && !selectedDept) {
+          setSelectedDept(userDepts[0].id.toString());
+        }
+      }
     } catch (error) {
       console.error('Failed to fetch master data');
     }
@@ -73,6 +87,11 @@ export const TimekeepingList = () => {
     }
   };
 
+  const filteredEmployees = employees.filter(emp => 
+    emp.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    emp.id.toString().includes(searchTerm)
+  );
+
   const handleUpdateRecord = (empId: number, field: string, value: string) => {
     setRecords(prev => ({
       ...prev,
@@ -89,7 +108,8 @@ export const TimekeepingList = () => {
     
     setRecords(prev => {
       const newRecords = { ...prev };
-      employees.forEach(emp => {
+      // Only mark visible (filtered) employees
+      filteredEmployees.forEach(emp => {
         newRecords[emp.id] = {
           symbolId: plusSymbol.id.toString(),
           overtimeHours: prev[emp.id]?.overtimeHours || '0'
@@ -203,7 +223,7 @@ export const TimekeepingList = () => {
                 >
                     <History size={18} /> {loadingPrev ? 'Đang tải...' : 'Load ngày trước'}
                 </button>
-
+{/* ... */}
                 <button 
                     onClick={handleResetAll} 
                     disabled={employees.length === 0}
@@ -216,7 +236,7 @@ export const TimekeepingList = () => {
 
             <button 
                 onClick={handleQuickMarkAll} 
-                disabled={loading || employees.length === 0}
+                disabled={loading || filteredEmployees.length === 0}
                 className="flex items-center gap-2 bg-primary hover:bg-primary-dark disabled:bg-gray-400 text-white px-5 py-3 rounded-2xl font-bold shadow-lg shadow-primary/30 transition-all hover:-translate-y-0.5"
             >
                 Chấm công Nhanh (+)
@@ -233,24 +253,36 @@ export const TimekeepingList = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden overflow-y-auto">
-        <div className="p-5 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30 flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <div className="p-5 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
                 <div className="flex items-center gap-3 text-sm font-black text-gray-700 dark:text-gray-300 uppercase">
                     <Filter size={20} className="text-primary" /> Lọc Khoa phòng:
                 </div>
                 <select 
                     value={selectedDept} 
                     onChange={(e) => setSelectedDept(e.target.value)}
-                    className="pl-4 pr-10 py-2.5 bg-white dark:bg-gray-800 border-2 border-transparent focus:border-primary/30 rounded-xl text-sm font-bold shadow-sm outline-none transition cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                    className="w-full md:w-auto pl-4 pr-10 py-2.5 bg-white dark:bg-gray-800 border-2 border-transparent focus:border-primary/30 rounded-xl text-sm font-bold shadow-sm outline-none transition cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
-                    <option value="">Tất cả khoa phòng</option>
+                    {user?.role?.name === 'ADMIN' && <option value="">Tất cả khoa phòng</option>}
                     {departments.map((d: any) => (
                         <option key={d.id} value={d.id}>{d.name}</option>
                     ))}
                 </select>
             </div>
-            <div className="text-xs font-bold text-gray-400 bg-gray-100 dark:bg-gray-900 px-3 py-1 rounded-full uppercase tracking-widest">
-                Đang hiển thị: {employees.length} Nhân sự
+
+            <div className="relative w-full md:w-64">
+                <input 
+                    type="text"
+                    placeholder="Tìm kiếm nhân viên..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 focus:border-primary/30 rounded-xl text-sm font-bold shadow-sm outline-none transition"
+                />
+                <Filter size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            </div>
+
+            <div className="text-xs font-bold text-gray-400 bg-gray-100 dark:bg-gray-900 px-3 py-1 rounded-full uppercase tracking-widest whitespace-nowrap">
+                Đang hiển thị: {filteredEmployees.length} Nhân sự
             </div>
         </div>
 
@@ -268,9 +300,9 @@ export const TimekeepingList = () => {
             <tbody className="divide-y divide-gray-50 dark:divide-gray-700/30">
               {loading ? (
                 <tr><td colSpan={5} className="py-24 text-center text-gray-400 font-black animate-pulse text-lg uppercase tracking-widest">Hệ thống đang đồng bộ dữ liệu...</td></tr>
-              ) : employees.length === 0 ? (
-                <tr><td colSpan={5} className="py-24 text-center text-gray-500 font-bold italic">Không có dữ liệu nhân sự để hiển thị.</td></tr>
-              ) : employees.map((emp, index) => {
+              ) : filteredEmployees.length === 0 ? (
+                <tr><td colSpan={5} className="py-24 text-center text-gray-500 font-bold italic">Không có dữ liệu nhân sự phù hợp.</td></tr>
+              ) : filteredEmployees.map((emp, index) => {
                 return (
                   <tr key={emp.id} className="transition duration-300 group hover:bg-gray-50/70 dark:hover:bg-gray-700/20">
                     <td className="py-5 px-6 text-center font-mono font-black text-gray-300 group-hover:text-primary transition-colors">{index + 1}</td>
