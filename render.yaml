@@ -3,8 +3,8 @@ services:
     name: hams-backend
     env: node
     rootDir: backend
-    buildCommand: npm install && npx prisma migrate deploy && npm run build
-    startCommand: npm start
+    buildCommand: npm install && npm run build
+    startCommand: npx prisma migrate deploy && npm start
     envVars:
       - key: DATABASE_URL
         sync: false
