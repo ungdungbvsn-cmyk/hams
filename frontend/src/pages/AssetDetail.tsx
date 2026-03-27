@@ -20,6 +20,7 @@ export const AssetDetail = () => {
   const [loading, setLoading] = useState(true);
   const [aiInsight, setAiInsight] = useState('');
   const [insightLoading, setInsightLoading] = useState(false);
+  const [insightError, setInsightError] = useState<string | null>(null);
 
   // Liquidation State
   const [isLiquidating, setIsLiquidating] = useState(false);
@@ -42,12 +43,13 @@ export const AssetDetail = () => {
 
   const getAiInsight = async () => {
     setInsightLoading(true);
+    setInsightError(null);
     try {
       const { data } = await apiClient.post('/ai/insights', { assetId: id });
       setAiInsight(data.insight);
     } catch (error: any) {
       console.error('AI Insight Error');
-      setAiInsight('Không thể lấy phân tích AI lúc này: ' + (error.response?.data?.error || 'Lỗi hệ thống'));
+      setInsightError('Không thể lấy phân tích AI lúc này: ' + (error.response?.data?.error || 'Lỗi hệ thống'));
     } finally {
       setInsightLoading(false);
     }
@@ -179,7 +181,11 @@ export const AssetDetail = () => {
                 {insightLoading ? 'Đang phân tích...' : 'Phân tích Tình trạng'}
               </button>
             </div>
-            {aiInsight ? (
+            {insightError ? (
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl relative z-10 text-red-600 dark:text-red-400 text-sm font-medium">
+                {insightError}
+              </div>
+            ) : aiInsight ? (
               <div className="p-6 bg-white dark:bg-gray-900/50 border border-primary/20 rounded-xl relative z-10 shadow-sm">
                 <p className="text-gray-700 dark:text-gray-200 leading-relaxed font-medium">{aiInsight}</p>
               </div>

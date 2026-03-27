@@ -22,6 +22,16 @@ const getGenAI = () => {
     return genAIInstance;
 };
 
+// Helper map role — "assistant" → "model" cho Gemini
+const mapHistory = (history: any[]): any[] => {
+  return (history || [])
+    .filter(msg => msg.role === 'user' || msg.role === 'assistant')
+    .map(msg => ({
+      role: msg.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: msg.content || msg.parts?.[0]?.text || '' }],
+    }));
+};
+
 export const getAssetInsights = async (req: Request, res: Response): Promise<any> => {
   try {
     const { assetId } = req.body;
@@ -54,11 +64,12 @@ export const getAssetInsights = async (req: Request, res: Response): Promise<any
 
     const modelOptions = fetchWithProxy ? { requestOptions: { fetch: fetchWithProxy } } : undefined;
     const genAI = getGenAI();
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" }, modelOptions as any);
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash-latest",
+      systemInstruction: `Bạn là chuyên gia phân tích tài sản bệnh viện chuyên nghiệp. Phân tích kỹ thuật ngắn gọn (tối đa 3-4 câu tiếng Việt), chỉ ra dấu hiệu bất thường và đưa ra khuyến nghị bảo trì cụ thể.`
+    }, modelOptions as any);
 
-    const prompt = `Bạn là một trợ lý ảo quản lý tài sản chuyên nghiệp trong hệ thống y tế/bệnh viện.
-    Dưới đây là thông tin chi tiết về tài sản. Hãy phân tích ngắn gọn (tối đa 3-4 câu tiếng Việt) về tình trạng thiết bị hiện tại, chỉ ra dấu hiệu bất thường nếu có nhiều lần sửa chữa hoặc báo hỏng, và đưa ra khuyến nghị bảo trì nếu cần:
-    
+    const prompt = `Phân tích tình trạng thiết bị sau và đưa ra khuyến nghị bảo trì:
     ${assetContext}`;
 
     const result = await model.generateContent(prompt);
@@ -78,6 +89,10 @@ export const getAssetInsights = async (req: Request, res: Response): Promise<any
 export const chatWithAI = async (req: Request, res: Response): Promise<any> => {
   try {
     const { message, history } = req.body;
+
+    if (!message?.trim()) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
     
     const [assetCount, employeeCount, pendingMaintenance] = await Promise.all([
       prisma.asset.count(),
@@ -85,28 +100,27 @@ export const chatWithAI = async (req: Request, res: Response): Promise<any> => {
       prisma.maintenanceRecord.count({ where: { status: 'PENDING' } })
     ]);
 
-    const systemContext = `
-      Bạn là trợ lý ảo HAMS (Hospital Asset Management System).
-      Tổng số tài sản: ${assetCount}.
-      Tổng số nhân viên: ${employeeCount}.
-      Số phiếu bảo trì đang chờ: ${pendingMaintenance}.
-      Phân hệ: Quản lý tài sản, Luân chuyển, Sửa chữa, Kiểm định, Chấm công.
-      Hãy trả lời ngắn gọn, lịch sự bằng tiếng Việt.
-    `;
+    const systemInstruction = `Bạn là trợ lý ảo HAMS (Hospital Asset Management System). 
+Dữ liệu hiện tại của hệ thống:
+- Tổng số tài sản: ${assetCount}
+- Tổng số nhân viên: ${employeeCount}
+- Số phiếu bảo trì đang chờ: ${pendingMaintenance}
+Phân hệ hỗ trợ: Quản lý tài sản, Luân chuyển, Sửa chữa, Kiểm định, Chấm công.
+Hãy trả lời ngắn gọn, lịch sự bằng tiếng Việt. Chỉ tư vấn trong phạm vi quản lý tài sản bệnh viện.`;
 
     const modelOptions = fetchWithProxy ? { requestOptions: { fetch: fetchWithProxy } } : undefined;
     const genAI = getGenAI();
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" }, modelOptions as any);
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash-latest",
+      systemInstruction
+    }, modelOptions as any);
+
     const chat = model.startChat({
-      history: (history || []).map((h: any) => ({
-        role: h.role === 'user' ? 'user' : 'model',
-        parts: [{ text: h.parts[0].text }]
-      })),
+      history: mapHistory(history),
       generationConfig: { maxOutputTokens: 500 },
     });
 
-    const fullPrompt = `${systemContext}\n\nNgười dùng: ${message}`;
-    const result = await chat.sendMessage(fullPrompt);
+    const result = await chat.sendMessage(message);
     const responseText = result.response.text();
 
     res.json({ reply: responseText });
