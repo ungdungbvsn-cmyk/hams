@@ -1,16 +1,20 @@
 import { Request, Response } from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import prisma from '../prisma';
-import HttpsProxyAgent from 'https-proxy-agent';
-import fetch from 'cross-fetch';
 
 const proxyUrl = process.env.PROXY_URL;
 let fetchWithProxy: any = undefined;
 
 if (proxyUrl) {
-  const agent = new (HttpsProxyAgent as any)(proxyUrl);
-  fetchWithProxy = (url: string, options: any) => fetch(url, { ...options, agent });
-  console.log('Gemini AI is using proxy:', proxyUrl);
+  try {
+    const { HttpsProxyAgent } = require('https-proxy-agent');
+    const crossFetch = require('cross-fetch');
+    const agent = new HttpsProxyAgent(proxyUrl);
+    fetchWithProxy = (url: string, options: any) => crossFetch(url, { ...options, agent });
+    console.log('Gemini AI is using proxy:', proxyUrl);
+  } catch (e) {
+    console.warn('Proxy setup failed, running without proxy:', e);
+  }
 }
 
 // Reuse the instance to avoid redundant initialization
