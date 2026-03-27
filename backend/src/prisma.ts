@@ -7,12 +7,26 @@ declare global {
   var prisma: PrismaClient | undefined;
 }
 
-const prisma = global.prisma || new PrismaClient();
-// Original adapter logic (causing DriverAdapterError on Render)
-// const connectionString = process.env.DATABASE_URL;
-// const pool = new Pool({ connectionString });
-// const adapter = new PrismaPg(pool as any);
-// const prisma = global.prisma || new PrismaClient({ adapter });
+let prisma: PrismaClient;
+
+try {
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) {
+    console.error('CRITICAL: DATABASE_URL is not set in environment variables');
+  }
+  
+  prisma = global.prisma || new PrismaClient({
+    datasources: {
+      db: {
+        url: dbUrl
+      }
+    }
+  });
+} catch (error: any) {
+  console.error('FATAL: Failed to initialize PrismaClient:', error);
+  // Re-throw to allow application to crash rather than run in broken state
+  throw error;
+}
 
 if (process.env.NODE_ENV !== 'production') {
   global.prisma = prisma;
