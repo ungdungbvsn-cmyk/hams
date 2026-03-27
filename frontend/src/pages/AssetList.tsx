@@ -7,6 +7,7 @@ import { ExcelImportModal } from '../components/ExcelImportModal';
 import { BreakdownReportModal } from '../components/BreakdownReportModal';
 import { TransferAssetModal } from '../components/TransferAssetModal';
 import { QRScannerModal } from '../components/QRScannerModal';
+import { BulkQRExportModal } from '../components/BulkQRExportModal';
 import { useAuthStore } from '../store/useAuthStore';
 
 interface Asset {
@@ -39,6 +40,7 @@ export const AssetList = () => {
   const [isBreakdownOpen, setIsBreakdownOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
+  const [isQRExportOpen, setIsQRExportOpen] = useState(false);
   const [assetToEdit, setAssetToEdit] = useState<Asset | null>(null);
   const [assetToTransfer, setAssetToTransfer] = useState<Asset | null>(null);
   const [selectedAssetForBreakdown, setSelectedAssetForBreakdown] = useState<Asset | null>(null);
@@ -145,6 +147,12 @@ export const AssetList = () => {
             className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-orange-500/20 transition-all active:scale-95"
           >
             <FileSpreadsheet size={20} /> Xuất Excel
+          </button>
+          <button 
+            onClick={() => setIsQRExportOpen(true)}
+            className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-purple-500/20 transition-all active:scale-95"
+          >
+            <QrCode size={20} /> Xuất mã QR
           </button>
           {hasManageAssets && (
             <button onClick={() => { setAssetToEdit(null); setIsFormOpen(true); }} className="flex items-center gap-2 bg-gradient-to-r from-primary to-purple-500 hover:from-primary-hover hover:to-purple-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all active:scale-95">
@@ -355,6 +363,11 @@ export const AssetList = () => {
         asset={selectedAssetForBreakdown}
       />
       <QRScannerModal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} />
+      <BulkQRExportModal 
+        isOpen={isQRExportOpen} 
+        onClose={() => setIsQRExportOpen(false)} 
+        assets={filteredAssets} 
+      />
     </div>
   );
 };

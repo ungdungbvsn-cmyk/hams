@@ -76,7 +76,7 @@ export const DashboardLayout = () => {
 
       {/* Sidebar */}
       <aside className={clsx(
-        "w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col shadow-xl z-50 transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static fixed inset-y-0 left-0",
+        "w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col shadow-xl z-50 transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static fixed inset-y-0 left-0 print:hidden",
         isSidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="h-16 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6">
@@ -165,8 +165,8 @@ export const DashboardLayout = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden relative">
-        <header className="h-16 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 flex items-center px-4 lg:px-8 shadow-sm z-30 sticky top-0">
+      <main className="flex-1 flex flex-col overflow-hidden relative print:overflow-visible">
+        <header className="h-16 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 flex items-center px-4 lg:px-8 shadow-sm z-30 sticky top-0 print:hidden">
           <button 
             className="lg:hidden p-2.5 mr-3 bg-gray-100 dark:bg-gray-700 rounded-xl text-primary shadow-sm hover:scale-105 transition-all"
             onClick={() => setIsSidebarOpen(true)}
@@ -175,12 +175,14 @@ export const DashboardLayout = () => {
           </button>
           <h2 className="text-sm lg:text-lg font-bold tracking-tight text-gray-900 dark:text-white uppercase px-3 py-1 rounded-lg">Hệ thống Quản lý Thiết bị - Chấm công</h2>
         </header>
-        <div className="flex-1 overflow-auto p-4 lg:p-8 relative">
+        <div className="flex-1 overflow-auto p-4 lg:p-8 relative print:p-0">
           <Outlet />
         </div>
       </main>
 
-      <AIChatBubble />
+      <div className="print:hidden">
+        <AIChatBubble />
+      </div>
     </div>
   );
 };
