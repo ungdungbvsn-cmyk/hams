@@ -1,10 +1,6 @@
 import axios from 'axios';
 
-const rawBaseURL = import.meta.env.VITE_API_URL || 'https://hams-8xqq.onrender.com/api';
-// Force override if the environment variable still points to the old backend
-const finalBaseURL = rawBaseURL.includes('hams-1.onrender.com') 
-  ? 'https://hams-8xqq.onrender.com/api' 
-  : rawBaseURL;
+const finalBaseURL = import.meta.env.VITE_API_URL || 'https://hams-1.onrender.com/api';
 
 export const apiClient = axios.create({
   baseURL: finalBaseURL,
