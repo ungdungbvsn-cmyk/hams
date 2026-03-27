@@ -7,9 +7,18 @@ declare global {
   var prisma: PrismaClient | undefined;
 }
 
-const connectionString = process.env.DATABASE_URL;
-const pool = new Pool({ connectionString });
-// @ts-ignore - Ignore pg Pool type mismatch
+const pool = new Pool({
+  host: 'aws-1-ap-southeast-1.pooler.supabase.com',
+  port: 6543,
+  user: 'postgres.cvpzrimpdbputhapanjf',
+  password: 'Sannhi123456@#',
+  database: 'postgres',
+  ssl: { rejectUnauthorized: false },
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
+});
+// @ts-ignore
 const adapter = new PrismaPg(pool as any);
 
 const prisma = global.prisma || new PrismaClient({ adapter });
