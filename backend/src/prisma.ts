@@ -7,22 +7,12 @@ declare global {
   var prisma: PrismaClient | undefined;
 }
 
-let prisma: PrismaClient;
+const connectionString = process.env.DATABASE_URL;
+const pool = new Pool({ connectionString });
+// @ts-ignore - Ignore pg Pool type mismatch
+const adapter = new PrismaPg(pool as any);
 
-try {
-  const dbUrl = process.env.DATABASE_URL;
-  if (!dbUrl) {
-    console.error('CRITICAL: DATABASE_URL is not set in environment variables');
-  }
-  
-  prisma = global.prisma || new PrismaClient({
-    log: ['query', 'info', 'warn', 'error']
-  });
-} catch (error: any) {
-  console.error('FATAL: Failed to initialize PrismaClient:', error);
-  // Re-throw to allow application to crash rather than run in broken state
-  throw error;
-}
+const prisma = global.prisma || new PrismaClient({ adapter });
 
 if (process.env.NODE_ENV !== 'production') {
   global.prisma = prisma;
