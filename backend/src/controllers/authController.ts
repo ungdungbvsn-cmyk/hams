@@ -14,15 +14,18 @@ export const login = async (req: Request, res: Response): Promise<any> => {
   }
 
   try {
+    console.log('DEBUG: Login attempt for username:', username);
     const user = await prisma.user.findUnique({
       where: { username },
       include: { role: true, employee: true, departments: true },
     });
 
     if (!user) {
+      console.log('DEBUG: User NOT found in database');
       return res.status(401).json({ error: 'Invalid username or password.' });
     }
 
+    console.log('DEBUG: User found, comparing passwords...');
     // Support for the unhashed seeded password
     let isMatch = false;
     if (user.password === 'password123' && password === 'password123') {
@@ -32,8 +35,11 @@ export const login = async (req: Request, res: Response): Promise<any> => {
     }
 
     if (!isMatch) {
+      console.log('DEBUG: Password mismatch');
       return res.status(401).json({ error: 'Invalid username or password.' });
     }
+
+    console.log('DEBUG: Login successful for:', username);
 
     const payload = {
       userId: user.id,
