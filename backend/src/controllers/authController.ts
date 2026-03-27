@@ -31,11 +31,12 @@ export const login = async (req: Request, res: Response): Promise<any> => {
     if (user.password === 'password123' && password === 'password123') {
       isMatch = true;
     } else {
+      console.log('DEBUG: Using bcrypt compare');
       isMatch = await bcrypt.compare(password, user.password);
     }
 
     if (!isMatch) {
-      console.log('DEBUG: Password mismatch');
+      console.log('DEBUG: Password mismatch for user:', username);
       return res.status(401).json({ error: 'Invalid username or password.' });
     }
 
@@ -47,6 +48,7 @@ export const login = async (req: Request, res: Response): Promise<any> => {
       role: user.role.name,
     };
 
+    console.log('DEBUG: Signing JWT...');
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1d' });
 
     const userResponse = {
@@ -58,10 +60,12 @@ export const login = async (req: Request, res: Response): Promise<any> => {
       departments: (user as any).departments,
     };
 
+    console.log('DEBUG: Sending successful response');
     // Send response immediately
     res.json({ token, user: userResponse });
 
     // Log activity in background after response
+    console.log('DEBUG: Logging activity in background...');
     logActivity(user.id, 'LOGIN', 'AUTHENTICATION', { username: user.username });
   } catch (error) {
     console.error('Login Error:', error);

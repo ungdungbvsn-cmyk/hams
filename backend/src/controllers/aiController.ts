@@ -66,10 +66,10 @@ export const getAssetInsights = async (req: Request, res: Response): Promise<any
       Support Tickets: ${(asset as any).tickets?.length || 0} (latest: ${(asset as any).tickets?.[0]?.title || 'None'})
     `;
 
-    const modelOptions = fetchWithProxy ? { requestOptions: { fetch: fetchWithProxy } } : undefined;
+    const modelOptions = fetchWithProxy ? { requestOptions: { fetch: fetchWithProxy }, apiVersion: 'v1beta' } : { apiVersion: 'v1beta' };
     const genAI = getGenAI();
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash-latest",
+      model: "gemini-2.5-flash",
       systemInstruction: `Bạn là chuyên gia phân tích tài sản bệnh viện chuyên nghiệp. Phân tích kỹ thuật ngắn gọn (tối đa 3-4 câu tiếng Việt), chỉ ra dấu hiệu bất thường và đưa ra khuyến nghị bảo trì cụ thể.`
     }, modelOptions as any);
 
@@ -82,8 +82,9 @@ export const getAssetInsights = async (req: Request, res: Response): Promise<any
     res.json({ insight: responseText });
   } catch (error: any) {
     console.error('AI Error:', error);
-    res.status(500).json({ 
-        error: 'Lỗi khi lấy phân tích từ AI', 
+    const isQuotaError = error.message?.includes('429') || error.status === 429;
+    res.status(isQuotaError ? 429 : 500).json({ 
+        error: isQuotaError ? 'Hệ thống AI đang bận (hết hạn mức), vui lòng thử lại sau.' : 'Lỗi khi lấy phân tích từ AI', 
         details: error.message,
         hasKey: !!process.env.GEMINI_API_KEY
     });
@@ -112,10 +113,10 @@ Dữ liệu hiện tại của hệ thống:
 Phân hệ hỗ trợ: Quản lý tài sản, Luân chuyển, Sửa chữa, Kiểm định, Chấm công.
 Hãy trả lời ngắn gọn, lịch sự bằng tiếng Việt. Chỉ tư vấn trong phạm vi quản lý tài sản bệnh viện.`;
 
-    const modelOptions = fetchWithProxy ? { requestOptions: { fetch: fetchWithProxy } } : undefined;
+    const modelOptions = fetchWithProxy ? { requestOptions: { fetch: fetchWithProxy }, apiVersion: 'v1beta' } : { apiVersion: 'v1beta' };
     const genAI = getGenAI();
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash-latest",
+      model: "gemini-2.5-flash",
       systemInstruction
     }, modelOptions as any);
 
@@ -130,8 +131,9 @@ Hãy trả lời ngắn gọn, lịch sự bằng tiếng Việt. Chỉ tư vấ
     res.json({ reply: responseText });
   } catch (error: any) {
     console.error('AI Chat Error:', error);
-    res.status(500).json({ 
-        error: 'Lỗi khi chat với AI', 
+    const isQuotaError = error.message?.includes('429') || error.status === 429;
+    res.status(isQuotaError ? 429 : 500).json({ 
+        error: isQuotaError ? 'Hệ thống AI đang bận (hết hạn mức), vui lòng thử lại sau.' : 'Lỗi khi chat với AI', 
         details: error.message,
         hasKey: !!process.env.GEMINI_API_KEY
     });
