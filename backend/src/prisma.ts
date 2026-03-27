@@ -16,11 +16,7 @@ try {
   }
   
   prisma = global.prisma || new PrismaClient({
-    datasources: {
-      db: {
-        url: dbUrl
-      }
-    }
+    log: ['query', 'info', 'warn', 'error']
   });
 } catch (error: any) {
   console.error('FATAL: Failed to initialize PrismaClient:', error);
