@@ -42,13 +42,23 @@ export const login = async (req: Request, res: Response): Promise<any> => {
 
     console.log('DEBUG: Login successful for:', username);
 
+    if (!user.role) {
+      console.error('CRITICAL ERROR: User has no assigned role!', user.username);
+      return res.status(500).json({ error: 'User configuration error: Missing role.' });
+    }
+
     const payload = {
       userId: user.id,
       username: user.username,
       role: user.role.name,
     };
 
+    // Sign JWT
     console.log('DEBUG: Signing JWT...');
+    if (!JWT_SECRET) {
+      console.error('CRITICAL ERROR: JWT_SECRET is not defined!');
+      throw new Error('JWT_SECRET_MISSING');
+    }
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1d' });
 
     const userResponse = {
@@ -61,16 +71,21 @@ export const login = async (req: Request, res: Response): Promise<any> => {
     };
 
     console.log('DEBUG: Sending successful response');
-    // Send response immediately
     res.json({ token, user: userResponse });
 
-    // Log activity in background after response
-    console.log('DEBUG: Logging activity in background...');
+    // Log activity in background
     logActivity(user.id, 'LOGIN', 'AUTHENTICATION', { username: user.username });
-  } catch (error) {
-    console.error('Login Error:', error);
+  } catch (error: any) {
+    console.error('--- LOGIN ERROR DETAILS ---');
+    console.error('Error Message:', error.message);
+    console.error('Error Stack:', error.stack);
+    if (error.code) console.error('Prisma/Error Code:', error.code);
+    
     if (!res.headersSent) {
-      res.status(500).json({ error: 'Internal server error.' });
+      res.status(500).json({ 
+        error: 'Internal server error.',
+        debug: process.env.NODE_ENV !== 'production' ? error.message : undefined 
+      });
     }
   }
 };
