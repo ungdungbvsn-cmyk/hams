@@ -18,8 +18,7 @@
   "type": "commonjs",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
-    "@prisma/adapter-pg": "^7.5.0",
-    "@prisma/client": "^7.5.0",
+    "@prisma/client": "^5.16.0",
     "@types/exceljs": "^0.5.3",
     "@types/node-cron": "^3.0.11",
     "axios": "^1.13.6",
@@ -48,7 +47,7 @@
     "@types/pg": "^8.20.0",
     "@types/uuid": "^10.0.0",
     "nodemon": "^3.1.14",
-    "prisma": "^7.5.0",
+    "prisma": "^5.16.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }
