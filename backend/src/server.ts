@@ -17,48 +17,40 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Health Check
-app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'OK', 
-    message: 'HAMS API is running smoothly',
-    version: '1.2.3-DEBUG-DB-V2',
-    hasGeminiKey: !!process.env.GEMINI_API_KEY,
+// Health Check & Diagnostics
+app.get('/health', async (req, res) => {
+  let dbStatus = 'UNKNOWN';
+  let dbError = null;
+  let userCount = -1;
+
+  try {
+    const prisma = (await import('./prisma')).default;
+    userCount = await prisma.user.count();
+    dbStatus = 'CONNECTED';
+  } catch (err: any) {
+    dbStatus = 'FAILED';
+    dbError = err.message;
+  }
+
+  res.status(dbStatus === 'CONNECTED' ? 200 : 500).json({ 
+    status: dbStatus,
+    message: dbStatus === 'CONNECTED' ? 'HAMS API is running smoothly' : 'HAMS API has database connection issues',
+    version: '1.2.3-DIAG-V3',
+    db: {
+      status: dbStatus,
+      error: dbError,
+      userCount: userCount
+    },
+    env: {
+      nodeEnv: process.env.NODE_ENV,
+      hasDbUrl: !!process.env.DATABASE_URL,
+      port: PORT
+    },
     timestamp: new Date().toISOString()
   });
 });
 
-// Direct DB Test Route - MUST be before app.use('/api', routes)
-app.get('/api/debug-db', async (req, res) => {
-  try {
-    const prisma = (await import('./prisma')).default;
-    const count = await prisma.user.count();
-    const firstUser = await prisma.user.findFirst({ include: { role: true } });
-    
-    res.json({
-      success: true,
-      userCount: count,
-      firstUser: firstUser ? {
-        id: firstUser.id,
-        username: firstUser.username,
-        role: firstUser.role?.name
-      } : null,
-      env: {
-        nodeEnv: process.env.NODE_ENV,
-        hasDbUrl: !!process.env.DATABASE_URL
-      }
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      code: error.code,
-      stack: error.stack
-    });
-  }
-});
-
-// Routes
+// Main API Routes
 app.use('/api', routes);
 
 // Start server
