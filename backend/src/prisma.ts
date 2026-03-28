@@ -1,27 +1,14 @@
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
-import { Pool } from 'pg';
-import { PrismaPg } from '@prisma/adapter-pg';
 
 declare global {
   var prisma: PrismaClient | undefined;
 }
 
-const pool = new Pool({
-  host: 'aws-1-ap-southeast-1.pooler.supabase.com',
-  port: 6543,
-  user: 'postgres.cvpzrimpdbputhapanjf',
-  password: 'HamsDatabase2024',
-  database: 'postgres',
-  ssl: { rejectUnauthorized: false },
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
-});
-// @ts-ignore
-const adapter = new PrismaPg(pool as any);
+const DATABASE_URL = 'postgresql://postgres.cvpzrimpdbputhapanjf:Sn123456%23@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1';
+process.env.DATABASE_URL = DATABASE_URL;
 
-const prisma = global.prisma || new PrismaClient({ adapter });
+const prisma = global.prisma || new PrismaClient();
 
 if (process.env.NODE_ENV !== 'production') {
   global.prisma = prisma;
