@@ -9,5 +9,6 @@ router.use(authenticate);
 router.get('/departments', getDepartments);
 router.get('/suppliers', getSuppliers);
 router.get('/categories', getEquipmentTypesMaster);
+router.get('/unified', getUnifiedMasterData);
 
 export default router;
