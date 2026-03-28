@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const finalBaseURL = import.meta.env.VITE_API_URL || 'https://hams-1.onrender.com/api';
+const finalBaseURL = import.meta.env.VITE_API_URL || 'https://hams-backend.onrender.com/api';
 
 export const apiClient = axios.create({
   baseURL: finalBaseURL,
