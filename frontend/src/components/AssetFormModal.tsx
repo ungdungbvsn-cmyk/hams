@@ -11,6 +11,7 @@ export const AssetFormModal = ({ isOpen, onClose, onSaved, assetToEdit }: any) =
   const [equipmentTypes, setEquipmentTypes] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [assetStatuses, setAssetStatuses] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -45,14 +46,11 @@ export const AssetFormModal = ({ isOpen, onClose, onSaved, assetToEdit }: any) =
 
   const fetchMasterData = async () => {
     try {
-      const [typeRes, depRes, supRes] = await Promise.all([
-        apiClient.get('/equipment-types'),
-        apiClient.get('/master/departments'),
-        apiClient.get('/master/suppliers')
-      ]);
-      setEquipmentTypes(typeRes.data);
-      setDepartments(depRes.data);
-      setSuppliers(supRes.data);
+      const { data } = await apiClient.get('/master/unified');
+      setEquipmentTypes(data.equipmentTypes);
+      setDepartments(data.departments);
+      setSuppliers(data.suppliers);
+      setAssetStatuses(data.assetStatuses);
     } catch (e) {
       console.error('Error fetching master data');
     }
@@ -116,13 +114,9 @@ export const AssetFormModal = ({ isOpen, onClose, onSaved, assetToEdit }: any) =
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Tình trạng</label>
               <select value={formData.statusId} onChange={e => setFormData({...formData, statusId: Number(e.target.value)})} className="w-full p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none transition font-medium cursor-pointer font-bold">
-                <option value={0}>0 - Hoạt động</option>
-                <option value={1}>1 - Hỏng</option>
-                <option value={2}>2 - Ngừng hoạt động/Chờ thanh lý</option>
-                <option value={3}>3 - Mới nhập/Chờ lắp đặt</option>
-                <option value={4}>4 - Đang bảo trì/Sửa chữa</option>
-                <option value={5}>5 - Chờ kiểm định/hiệu chuẩn</option>
-                <option value={6}>6 - Đang cho mượn/đang gửi</option>
+                {assetStatuses.map(s => (
+                  <option key={s.matt} value={s.matt}>{s.matt} - {s.tentt}</option>
+                ))}
               </select>
             </div>
             <div className="space-y-2">

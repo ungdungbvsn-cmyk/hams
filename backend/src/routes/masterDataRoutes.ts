@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getDepartments, getSuppliers, getEquipmentTypesMaster } from '../controllers/masterDataController';
+import { getDepartments, getSuppliers, getEquipmentTypesMaster, getUnifiedMasterData } from '../controllers/masterDataController';
 import { authenticate } from '../middlewares/auth';
 
 const router = Router();

@@ -173,7 +173,7 @@ export const DashboardLayout = () => {
           >
             <Menu size={20} />
           </button>
-          <h2 className="text-sm lg:text-lg font-bold tracking-tight bg-gray-900 dark:text-white uppercase">Hệ thống Quản lý Tài sản</h2>
+          <h2 className="text-sm lg:text-lg font-bold tracking-tight text-gray-900 dark:text-white uppercase px-3 py-1 rounded-lg">Hệ thống Quản lý Thiết bị - Chấm công</h2>
         </header>
         <div className="flex-1 overflow-auto p-4 lg:p-8 relative">
           <Outlet />

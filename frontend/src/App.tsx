@@ -5,6 +5,7 @@ import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { AssetList } from './pages/AssetList';
 import { AssetDetail } from './pages/AssetDetail';
+import { BulkQRPrint } from './pages/BulkQRPrint';
 import { TicketList } from './pages/TicketList';
 import { MovementList } from './pages/MovementList';
 import { SupplierList } from './pages/SupplierList';
@@ -71,6 +72,7 @@ function App() {
         <Route path="/" element={isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" />}>
           <Route index element={<Dashboard />} />
           <Route path="assets" element={<AssetList />} />
+          <Route path="assets/print-qrs" element={<BulkQRPrint />} />
           <Route path="assets/:id" element={<AssetDetail />} />
           <Route path="tickets" element={<TicketList />} />
           <Route path="maintenances" element={<MaintenanceList />} />

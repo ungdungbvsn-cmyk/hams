@@ -133,6 +133,9 @@ export const AssetList = () => {
           <button onClick={() => setIsScannerOpen(true)} className="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-indigo-500/20 transition-all active:scale-95">
             <QrCode size={20} /> Quét QR
           </button>
+          <Link to="/assets/print-qrs" className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-orange-500/20 transition-all active:scale-95">
+            <QrCode size={20} /> In tất cả mã QR
+          </Link>
           {hasImportExcel && (
             <div className="flex items-center gap-2">
               <button onClick={() => setIsImportOpen(true)} className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-green-500/20 transition-all active:scale-95">
