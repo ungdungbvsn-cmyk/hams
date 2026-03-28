@@ -45,27 +45,32 @@ async function getAICompletion(prompt: string, systemContext: string = '', histo
   // 1. Try Gemini
   const genAI = getGenAI();
   if (genAI) {
-    try {
-      console.log('Attempting Gemini AI...');
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-      
-      // If history is provided, use chat mode
-      if (history.length > 0) {
-        const chat = model.startChat({
-          history: history.map((h: any) => ({
-            role: h.role === 'user' ? 'user' : 'model',
-            parts: [{ text: h.content || h.parts[0].text }]
-          })),
-        });
-        const result = await chat.sendMessage(`${systemContext}\n\n${prompt}`);
-        return result.response.text();
-      } else {
-        const result = await model.generateContent(`${systemContext}\n\n${prompt}`);
-        return result.response.text();
+    // Models to try in order
+    const modelsToTry = ["gemini-3-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
+    
+    for (const modelName of modelsToTry) {
+      try {
+        console.log(`Attempting Gemini AI (${modelName})...`);
+        const model = genAI.getGenerativeModel({ model: modelName });
+        
+        // If history is provided, use chat mode
+        if (history.length > 0) {
+          const chat = model.startChat({
+            history: history.map((h: any) => ({
+              role: h.role === 'user' ? 'user' : 'model',
+              parts: [{ text: h.content || h.parts[0].text }]
+            })),
+          });
+          const result = await chat.sendMessage(`${systemContext}\n\n${prompt}`);
+          return result.response.text();
+        } else {
+          const result = await model.generateContent(`${systemContext}\n\n${prompt}`);
+          return result.response.text();
+        }
+      } catch (error: any) {
+        console.error(`Gemini (${modelName}) failed:`, error.message);
+        // Fall through to next Gemini model or next provider
       }
-    } catch (error: any) {
-      console.error('Gemini failed:', error.message);
-      // Fall through to next provider
     }
   }
 
