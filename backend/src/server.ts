@@ -17,24 +17,20 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Routes
-app.use('/api', routes);
-
 // Health Check
 app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'OK', 
     message: 'HAMS API is running smoothly',
-    version: '1.2.3-DEBUG-DB',
+    version: '1.2.3-DEBUG-DB-V2',
     hasGeminiKey: !!process.env.GEMINI_API_KEY,
     timestamp: new Date().toISOString()
   });
 });
 
-// Direct DB Test Route
+// Direct DB Test Route - MUST be before app.use('/api', routes)
 app.get('/api/debug-db', async (req, res) => {
   try {
-    const userCount = await routes.get('/users') ? 'N/A' : 'CHECKING'; // This is wrong, I'll use prisma directly
     const prisma = (await import('./prisma')).default;
     const count = await prisma.user.count();
     const firstUser = await prisma.user.findFirst({ include: { role: true } });
@@ -62,7 +58,11 @@ app.get('/api/debug-db', async (req, res) => {
   }
 });
 
+// Routes
+app.use('/api', routes);
+
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Server v1.2.3-DEBUG-DB-V2 running on port ${PORT}`);
+  console.log('Registered Routes: /health, /api/debug-db, /api/*');
 });
