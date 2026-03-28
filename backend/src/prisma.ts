@@ -11,7 +11,7 @@ const prisma = global.prisma || new PrismaClient({
     },
   },
   log: ['error', 'warn'],
-});
+} as any);
 
 if (process.env.DATABASE_URL) {
   try {
