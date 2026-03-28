@@ -1,4 +1,4 @@
-fimport { Request, Response } from 'express';
+import { Request, Response } from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import prisma from '../prisma';
 import HttpsProxyAgent from 'https-proxy-agent';
