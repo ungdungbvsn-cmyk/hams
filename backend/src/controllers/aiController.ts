@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
 import prisma from '../prisma';
 import HttpsProxyAgent from 'https-proxy-agent';
 import fetch from 'cross-fetch';
@@ -13,19 +14,123 @@ if (proxyUrl) {
   console.log('Gemini AI is using proxy:', proxyUrl);
 }
 
-// Reuse the instance to avoid redundant initialization
+// AI Instances
 let genAIInstance: GoogleGenerativeAI | null = null;
 const getGenAI = () => {
-    const key = process.env.GEMINI_API_KEY;
-    if (!key) throw new Error('GEMINI_API_KEY is not set in environment variables');
-    if (!genAIInstance) genAIInstance = new GoogleGenerativeAI(key);
-    return genAIInstance;
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) return null;
+  if (!genAIInstance) genAIInstance = new GoogleGenerativeAI(key);
+  return genAIInstance;
 };
+
+const getOpenAI = () => {
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) return null;
+  return new OpenAI({ apiKey: key });
+};
+
+const getDeepSeek = () => {
+  const key = process.env.DEEPSEEK_API_KEY;
+  if (!key) return null;
+  return new OpenAI({
+    apiKey: key,
+    baseURL: 'https://api.deepseek.com/v1'
+  });
+};
+
+/**
+ * Unified helper to get AI completion with fallback
+ */
+async function getAICompletion(prompt: string, systemContext: string = '', history: any[] = []): Promise<string> {
+  // 1. Try Gemini
+  const genAI = getGenAI();
+  if (genAI) {
+    try {
+      console.log('Attempting Gemini AI...');
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      
+      // If history is provided, use chat mode
+      if (history.length > 0) {
+        const chat = model.startChat({
+          history: history.map((h: any) => ({
+            role: h.role === 'user' ? 'user' : 'model',
+            parts: [{ text: h.content || h.parts[0].text }]
+          })),
+        });
+        const result = await chat.sendMessage(`${systemContext}\n\n${prompt}`);
+        return result.response.text();
+      } else {
+        const result = await model.generateContent(`${systemContext}\n\n${prompt}`);
+        return result.response.text();
+      }
+    } catch (error: any) {
+      console.error('Gemini failed:', error.message);
+      // Fall through to next provider
+    }
+  }
+
+  // 2. Try OpenAI
+  const openai = getOpenAI();
+  if (openai) {
+    try {
+      console.log('Falling back to OpenAI...');
+      const messages: any[] = [];
+      if (systemContext) messages.push({ role: 'system', content: systemContext });
+      
+      history.forEach((h: any) => {
+        messages.push({ 
+          role: h.role === 'user' ? 'user' : 'assistant', 
+          content: h.content || h.parts[0].text 
+        });
+      });
+      
+      messages.push({ role: 'user', content: prompt });
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages,
+        max_tokens: 500,
+      });
+      return response.choices[0].message.content || '';
+    } catch (error: any) {
+      console.error('OpenAI failed:', error.message);
+    }
+  }
+
+  // 3. Try DeepSeek (OpenAI compatible)
+  const deepseek = getDeepSeek();
+  if (deepseek) {
+    try {
+      console.log('Falling back to DeepSeek...');
+      const messages: any[] = [];
+      if (systemContext) messages.push({ role: 'system', content: systemContext });
+      
+      history.forEach((h: any) => {
+        messages.push({ 
+          role: h.role === 'user' ? 'user' : 'assistant', 
+          content: h.content || h.parts[0].text 
+        });
+      });
+      
+      messages.push({ role: 'user', content: prompt });
+
+      const response = await (deepseek as any).chat.completions.create({
+        model: "deepseek-chat",
+        messages,
+        max_tokens: 500,
+      });
+      return response.choices[0].message.content || '';
+    } catch (error: any) {
+      console.error('DeepSeek failed:', error.message);
+    }
+  }
+
+  throw new Error('All AI providers failed or are not configured.');
+}
 
 export const getAssetInsights = async (req: Request, res: Response): Promise<any> => {
   try {
     const { assetId } = req.body;
-    
     const asset = await prisma.asset.findUnique({
       where: { id: Number(assetId) },
       include: {
@@ -38,9 +143,7 @@ export const getAssetInsights = async (req: Request, res: Response): Promise<any
       }
     });
 
-    if (!asset) {
-      return res.status(404).json({ error: 'Asset not found' });
-    }
+    if (!asset) return res.status(404).json({ error: 'Asset not found' });
 
     const assetContext = `
       Asset Name: ${(asset as any).name}
@@ -52,26 +155,14 @@ export const getAssetInsights = async (req: Request, res: Response): Promise<any
       Support Tickets: ${(asset as any).tickets?.length || 0} (latest: ${(asset as any).tickets?.[0]?.title || 'None'})
     `;
 
-    const modelOptions = fetchWithProxy ? { requestOptions: { fetch: fetchWithProxy } } : undefined;
-    const genAI = getGenAI();
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const systemContext = `Bạn là một trợ lý ảo quản lý tài sản chuyên nghiệp trong hệ thống y tế/bệnh viện.
+    Hãy phân tích ngắn gọn (tối đa 3-4 câu tiếng Việt) về tình trạng thiết bị hiện tại, chỉ ra dấu hiệu bất thường nếu có nhiều lần sửa chữa hoặc báo hỏng, và đưa ra khuyến nghị bảo trì nếu cần.`;
 
-    const prompt = `Bạn là một trợ lý ảo quản lý tài sản chuyên nghiệp trong hệ thống y tế/bệnh viện.
-    Dưới đây là thông tin chi tiết về tài sản. Hãy phân tích ngắn gọn (tối đa 3-4 câu tiếng Việt) về tình trạng thiết bị hiện tại, chỉ ra dấu hiệu bất thường nếu có nhiều lần sửa chữa hoặc báo hỏng, và đưa ra khuyến nghị bảo trì nếu cần:
-    
-    ${assetContext}`;
-
-    const result = await model.generateContent(prompt);
-    const responseText = result.response.text();
-
-    res.json({ insight: responseText });
+    const insight = await getAICompletion(assetContext, systemContext);
+    res.json({ insight });
   } catch (error: any) {
-    console.error('AI Error:', error);
-    res.status(500).json({ 
-        error: 'Lỗi khi lấy phân tích từ AI', 
-        details: error.message,
-        hasKey: !!process.env.GEMINI_API_KEY
-    });
+    console.error('AI Insights Error:', error);
+    res.status(500).json({ error: 'Lỗi khi lấy phân tích từ AI', details: error.message });
   }
 };
 
@@ -90,32 +181,13 @@ export const chatWithAI = async (req: Request, res: Response): Promise<any> => {
       Tổng số tài sản: ${assetCount}.
       Tổng số nhân viên: ${employeeCount}.
       Số phiếu bảo trì đang chờ: ${pendingMaintenance}.
-      Phân hệ: Quản lý tài sản, Luân chuyển, Sửa chữa, Kiểm định, Chấm công.
       Hãy trả lời ngắn gọn, lịch sự bằng tiếng Việt.
     `;
 
-    const modelOptions = fetchWithProxy ? { requestOptions: { fetch: fetchWithProxy } } : undefined;
-    const genAI = getGenAI();
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const chat = model.startChat({
-      history: (history || []).map((h: any) => ({
-        role: h.role === 'user' ? 'user' : 'model',
-        parts: [{ text: h.parts[0].text }]
-      })),
-      generationConfig: { maxOutputTokens: 500 },
-    });
-
-    const fullPrompt = `${systemContext}\n\nNgười dùng: ${message}`;
-    const result = await chat.sendMessage(fullPrompt);
-    const responseText = result.response.text();
-
-    res.json({ reply: responseText });
+    const reply = await getAICompletion(message, systemContext, history || []);
+    res.json({ reply });
   } catch (error: any) {
     console.error('AI Chat Error:', error);
-    res.status(500).json({ 
-        error: 'Lỗi khi chat với AI', 
-        details: error.message,
-        hasKey: !!process.env.GEMINI_API_KEY
-    });
+    res.status(500).json({ error: 'Lỗi khi chat với AI', details: error.message });
   }
 };
