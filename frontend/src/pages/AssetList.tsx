@@ -48,7 +48,9 @@ export const AssetList = () => {
   const itemsPerPage = 10;
   const [groupFilter, setGroupFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [departmentFilter, setDepartmentFilter] = useState('all');
   const [equipmentTypes, setEquipmentTypes] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
 
   useEffect(() => {
     fetchAssets();
@@ -56,12 +58,13 @@ export const AssetList = () => {
 
   const fetchAssets = async () => {
     try {
-      const [assetRes, typeRes] = await Promise.all([
+      const [assetRes, unifiedRes] = await Promise.all([
         apiClient.get('/assets'),
-        apiClient.get('/equipment-types')
+        apiClient.get('/master/unified')
       ]);
       setAssets(assetRes.data);
-      setEquipmentTypes(typeRes.data);
+      setEquipmentTypes(unifiedRes.data.equipmentTypes);
+      setDepartments(unifiedRes.data.departments);
     } catch (error) {
       console.error('Failed to fetch assets');
     } finally {
@@ -111,7 +114,8 @@ export const AssetList = () => {
                          a.assetCode.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesGroup = groupFilter === 'all' || a.group === groupFilter;
     const matchesType = typeFilter === 'all' || a.equipmentType?.name === typeFilter;
-    return matchesSearch && matchesGroup && matchesType;
+    const matchesDept = departmentFilter === 'all' || a.department?.name === departmentFilter;
+    return matchesSearch && matchesGroup && matchesType && matchesDept;
   });
 
   // Pagination logic
@@ -120,7 +124,7 @@ export const AssetList = () => {
 
   useEffect(() => {
     setCurrentPage(1); // Reset to page 1 when filters change
-  }, [searchTerm, groupFilter, typeFilter]);
+  }, [searchTerm, groupFilter, typeFilter, departmentFilter]);
 
   return (
     <div className="space-y-6">
@@ -133,7 +137,7 @@ export const AssetList = () => {
           <button onClick={() => setIsScannerOpen(true)} className="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-indigo-500/20 transition-all active:scale-95">
             <QrCode size={20} /> Quét QR
           </button>
-          <Link to="/assets/print-qrs" className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-orange-500/20 transition-all active:scale-95">
+          <Link to={`/assets/print-qrs?group=${encodeURIComponent(groupFilter)}&type=${encodeURIComponent(typeFilter)}&department=${encodeURIComponent(departmentFilter)}&search=${encodeURIComponent(searchTerm)}`} className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-orange-500/20 transition-all active:scale-95">
             <QrCode size={20} /> In tất cả mã QR
           </Link>
           {hasImportExcel && (
@@ -188,6 +192,16 @@ export const AssetList = () => {
               <option value="all">Tất cả Loại</option>
               {equipmentTypes.map(t => (
                 <option key={t.id} value={t.name}>{t.name}</option>
+              ))}
+            </select>
+            <select 
+              value={departmentFilter}
+              onChange={(e) => setDepartmentFilter(e.target.value)}
+              className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl font-bold text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+            >
+              <option value="all">Tất cả Khoa phòng</option>
+              {departments.map(d => (
+                <option key={d.id} value={d.name}>{d.name}</option>
               ))}
             </select>
           </div>

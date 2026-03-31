@@ -2,12 +2,18 @@ import { useState, useEffect } from 'react';
 import apiClient from '../api/client';
 import { QRCodeSVG } from 'qrcode.react';
 import { ArrowLeft, Printer } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export const BulkQRPrint = () => {
   const [assets, setAssets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const groupFilter = searchParams.get('group') || 'all';
+  const typeFilter = searchParams.get('type') || 'all';
+  const departmentFilter = searchParams.get('department') || 'all';
+  const searchTerm = searchParams.get('search') || '';
 
   useEffect(() => {
     fetchAssets();
@@ -27,6 +33,15 @@ export const BulkQRPrint = () => {
   const handlePrint = () => {
     window.print();
   };
+
+  const filteredAssets = assets.filter(a => {
+    const matchesSearch = a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          a.assetCode.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesGroup = groupFilter === 'all' || a.group === groupFilter;
+    const matchesType = typeFilter === 'all' || a.equipmentType?.name === typeFilter;
+    const matchesDept = departmentFilter === 'all' || a.department?.name === departmentFilter;
+    return matchesSearch && matchesGroup && matchesType && matchesDept;
+  });
 
   if (loading) return <div className="p-8 text-center font-bold">Đang tải danh sách mã QR...</div>;
 
@@ -50,7 +65,7 @@ export const BulkQRPrint = () => {
 
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 print:grid-cols-3 print:gap-6">
-          {assets.map((asset) => (
+          {filteredAssets.map((asset) => (
             <div 
               key={asset.id} 
               className="bg-white p-4 border border-gray-200 rounded-lg flex flex-col items-center justify-center text-center shadow-sm print:shadow-none print:border-gray-300 print:break-inside-avoid"
