@@ -63,10 +63,10 @@ export const login = async (req: Request, res: Response): Promise<any> => {
 
     // Log activity in background after response
     logActivity(user.id, 'LOGIN', 'AUTHENTICATION', { username: user.username });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Login Error:', error);
     if (!res.headersSent) {
-      res.status(500).json({ error: 'Internal server error.' });
+      res.status(500).json({ error: `Internal server error: ${error.message || error}` });
     }
   }
 };

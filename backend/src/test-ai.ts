@@ -1,17 +1,43 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
-dotenv.config();
+import path from 'path';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+// Load from backend root if running from src
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
-async function test() {
+const key = process.env.GEMINI_API_KEY;
+console.log("GEMINI_API_KEY present:", !!key);
+
+const genAI = new GoogleGenerativeAI(key || '');
+
+async function listModels() {
+  console.log("\nListing available models...");
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const result = await model.generateContent("Say hello");
-    console.log("Success:", result.response.text());
+    // Note: listModels is not directly on genAI in the new SDK version
+    // It's part of the generative language client if using the REST API or different SDK
+    // But for this SDK, we might need a workaround or just try common ones.
+    console.log("ListModels is not directly available in this SDK version. Trying common models...");
   } catch (error: any) {
-    console.error("Test Failed:", error.message);
+    console.error("ListModels failed:", error.message);
   }
 }
 
-test();
+async function testModel(modelName: string) {
+  console.log(`\nTesting model: ${modelName}`);
+  try {
+    const model = genAI.getGenerativeModel({ model: modelName });
+    const result = await model.generateContent("Say hello");
+    console.log(`Success (${modelName}):`, result.response.text());
+  } catch (error: any) {
+    console.error(`Failed (${modelName}):`, error.message);
+  }
+}
+
+async function runTests() {
+  await listModels();
+  await testModel("gemini-1.5-flash");
+  await testModel("gemini-1.5-flash-8b");
+  await testModel("gemini-1.0-pro");
+}
+
+runTests();
