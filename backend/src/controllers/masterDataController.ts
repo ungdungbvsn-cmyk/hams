@@ -33,8 +33,16 @@ export const getEquipmentTypesMaster = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Internal server error.' });
   }
 };
-export const getUnifiedMasterData = async (req: Request, res: Response) => {
+let masterDataCache: any = null;
+let lastCacheTime = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+export const getUnifiedMasterData = async (req: Request, res: Response): Promise<any> => {
   try {
+    if (masterDataCache && Date.now() - lastCacheTime < CACHE_TTL) {
+      return res.json(masterDataCache);
+    }
+
     const [departments, suppliers, equipmentTypes, assetStatuses] = await Promise.all([
       prisma.department.findMany({ orderBy: { name: 'asc' } }),
       prisma.supplier.findMany({ orderBy: { name: 'asc' } }),
@@ -42,12 +50,15 @@ export const getUnifiedMasterData = async (req: Request, res: Response) => {
       prisma.assetStatus.findMany({ orderBy: { matt: 'asc' } })
     ]);
 
-    res.json({
+    masterDataCache = {
       departments,
       suppliers,
       equipmentTypes,
       assetStatuses
-    });
+    };
+    lastCacheTime = Date.now();
+
+    res.json(masterDataCache);
   } catch (error) {
     console.error('Unified Master Data Error:', error);
     res.status(500).json({ error: 'Internal server error.' });
