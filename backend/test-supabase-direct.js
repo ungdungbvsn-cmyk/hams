@@ -1,10 +1,10 @@
 const { Client } = require('pg');
 
 const config = {
-  host: 'db.cvpzrimpdbputhapanjf.supabase.co',
-  port: 5432,
-  user: 'postgres',
-  password: 'Sannhi123456@#',
+  host: 'aws-1-ap-southeast-1.pooler.supabase.com',
+  port: 6543,
+  user: 'postgres.cvpzrimpdbputhapanjf',
+  password: 'Sn123456#',
   database: 'postgres',
   ssl: { rejectUnauthorized: false }
 };
